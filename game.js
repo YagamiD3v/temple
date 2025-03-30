@@ -1,4 +1,3 @@
-
 var Module;
 
 if (typeof Module === 'undefined') Module = eval('(function() { try { return Module || {} } catch(e) { return {} } })()');
@@ -26,9 +25,12 @@ Module.expectedDataFileDownloads++;
       Module['locateFile'] = Module['locateFilePackage'];
       Module.printErr('warning: you defined Module.locateFilePackage, that has been renamed to Module.locateFile (using your locateFilePackage for now)');
     }
+    
+    // Ajout d'un timestamp à l'URL pour éviter la mise en cache
+    var timestamp = new Date().getTime();
     var REMOTE_PACKAGE_NAME = typeof Module['locateFile'] === 'function' ?
-    Module['locateFile'](REMOTE_PACKAGE_BASE) :
-    ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE);
+    Module['locateFile'](REMOTE_PACKAGE_BASE) + '?t=' + timestamp :
+    ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE + '?t=' + timestamp);
 
     var REMOTE_PACKAGE_SIZE = metadata.remote_package_size;
     var PACKAGE_UUID = metadata.package_uuid;
@@ -37,6 +39,12 @@ Module.expectedDataFileDownloads++;
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
       xhr.responseType = 'arraybuffer';
+      
+      // Ajout d'en-têtes pour désactiver la mise en cache
+      xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      xhr.setRequestHeader('Pragma', 'no-cache');
+      xhr.setRequestHeader('Expires', '0');
+      
       xhr.onprogress = function(event) {
         var url = packageName;
         var size = packageSize;
@@ -79,6 +87,12 @@ Module.expectedDataFileDownloads++;
         }
       };
       xhr.send(null);
+    };
+
+    // Désactivation complète de l'utilisation du cache IndexedDB
+    function openDatabase(callback, errback) {
+      // Toujours appeler le callback d'erreur pour forcer le téléchargement
+      errback(new Error("Cache disabled"));
     };
 
     function handleError(error) {
@@ -127,96 +141,6 @@ Module.expectedDataFileDownloads++;
       new DataRequest(files[i].start, files[i].end, files[i].crunched, files[i].audio).open('GET', files[i].filename);
     }
 
-
-    var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-    var IDB_RO = "readonly";
-    var IDB_RW = "readwrite";
-    var DB_NAME = "EM_PRELOAD_CACHE";
-    var DB_VERSION = 1;
-    var METADATA_STORE_NAME = 'METADATA';
-    var PACKAGE_STORE_NAME = 'PACKAGES';
-    function openDatabase(callback, errback) {
-      try {
-        var openRequest = indexedDB.open(DB_NAME, DB_VERSION);
-      } catch (e) {
-        return errback(e);
-      }
-      openRequest.onupgradeneeded = function(event) {
-        var db = event.target.result;
-
-        if(db.objectStoreNames.contains(PACKAGE_STORE_NAME)) {
-          db.deleteObjectStore(PACKAGE_STORE_NAME);
-        }
-        var packages = db.createObjectStore(PACKAGE_STORE_NAME);
-
-        if(db.objectStoreNames.contains(METADATA_STORE_NAME)) {
-          db.deleteObjectStore(METADATA_STORE_NAME);
-        }
-        var metadata = db.createObjectStore(METADATA_STORE_NAME);
-      };
-      openRequest.onsuccess = function(event) {
-        var db = event.target.result;
-        callback(db);
-      };
-      openRequest.onerror = function(error) {
-        errback(error);
-      };
-    };
-
-    /* Check if there's a cached package, and if so whether it's the latest available */
-    function checkCachedPackage(db, packageName, callback, errback) {
-      var transaction = db.transaction([METADATA_STORE_NAME], IDB_RO);
-      var metadata = transaction.objectStore(METADATA_STORE_NAME);
-
-      var getRequest = metadata.get("metadata/" + packageName);
-      getRequest.onsuccess = function(event) {
-        var result = event.target.result;
-        if (!result) {
-          return callback(false);
-        } else {
-          return callback(PACKAGE_UUID === result.uuid);
-        }
-      };
-      getRequest.onerror = function(error) {
-        errback(error);
-      };
-    };
-
-    function fetchCachedPackage(db, packageName, callback, errback) {
-      var transaction = db.transaction([PACKAGE_STORE_NAME], IDB_RO);
-      var packages = transaction.objectStore(PACKAGE_STORE_NAME);
-
-      var getRequest = packages.get("package/" + packageName);
-      getRequest.onsuccess = function(event) {
-        var result = event.target.result;
-        callback(result);
-      };
-      getRequest.onerror = function(error) {
-        errback(error);
-      };
-    };
-
-    function cacheRemotePackage(db, packageName, packageData, packageMeta, callback, errback) {
-      var transaction_packages = db.transaction([PACKAGE_STORE_NAME], IDB_RW);
-      var packages = transaction_packages.objectStore(PACKAGE_STORE_NAME);
-
-      var putPackageRequest = packages.put(packageData, "package/" + packageName);
-      putPackageRequest.onsuccess = function(event) {
-        var transaction_metadata = db.transaction([METADATA_STORE_NAME], IDB_RW);
-        var metadata = transaction_metadata.objectStore(METADATA_STORE_NAME);
-        var putMetadataRequest = metadata.put(packageMeta, "metadata/" + packageName);
-        putMetadataRequest.onsuccess = function(event) {
-          callback(packageData);
-        };
-        putMetadataRequest.onerror = function(error) {
-          errback(error);
-        };
-      };
-      putPackageRequest.onerror = function(error) {
-        errback(error);
-      };
-    };
-
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -242,36 +166,9 @@ Module.expectedDataFileDownloads++;
 
       if (!Module.preloadResults) Module.preloadResults = {};
 
-      function preloadFallback(error) {
-        console.error(error);
-        console.error('falling back to default preload behavior');
-        fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, processPackageData, handleError);
-      };
-
-      openDatabase(
-        function(db) {
-          checkCachedPackage(db, PACKAGE_PATH + PACKAGE_NAME,
-            function(useCached) {
-              Module.preloadResults[PACKAGE_NAME] = {fromCache: useCached};
-              if (useCached) {
-                console.info('loading ' + PACKAGE_NAME + ' from cache');
-                fetchCachedPackage(db, PACKAGE_PATH + PACKAGE_NAME, processPackageData, preloadFallback);
-              } else {
-                console.info('loading ' + PACKAGE_NAME + ' from remote');
-                fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE,
-                  function(packageData) {
-                    cacheRemotePackage(db, PACKAGE_PATH + PACKAGE_NAME, packageData, {uuid:PACKAGE_UUID}, processPackageData,
-                      function(error) {
-                        console.error(error);
-                        processPackageData(packageData);
-                      });
-                  }
-                  , preloadFallback);
-              }
-            }
-            , preloadFallback);
-        }
-        , preloadFallback);
+      // Téléchargement direct du package sans vérification de cache
+      console.info('loading ' + PACKAGE_NAME + ' from remote (cache disabled)');
+      fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, processPackageData, handleError);
 
       if (Module['setStatus']) Module['setStatus']('Downloading...');
 
@@ -284,6 +181,6 @@ Module.expectedDataFileDownloads++;
     }
 
   }
-  loadPackage({"package_uuid":"35473a71-8d75-4315-b8f6-f5e514647304","remote_package_size":2395085,"files":[{"filename":"/game.love","crunched":0,"start":0,"end":2395085,"audio":false}]});
+  loadPackage({"package_uuid":"0e2ac7bc-ed08-42ba-bfda-116806dabf8a","remote_package_size":2393519,"files":[{"filename":"/game.love","crunched":0,"start":0,"end":2393519,"audio":false}]});
 
 })();

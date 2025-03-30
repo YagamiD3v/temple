@@ -113,8 +113,14 @@
       var applicationLoad = function(e) {
         Love(Module);
       }
+
+      // Charger game.js sans cache
+      const scriptGame = document.createElement('script');
+      scriptGame.type = 'text/javascript';
+      scriptGame.src = 'game.js?t=' + new Date().getTime(); // Ajoute un timestamp unique
+      document.body.appendChild(scriptGame);
     </script>
-    <script type="text/javascript" src="game.js"></script>
+    <!--<script type="text/javascript" src="game.js"></script>-->
     <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
   </body>
 </html>
