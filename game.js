@@ -89,12 +89,6 @@ Module.expectedDataFileDownloads++;
       xhr.send(null);
     };
 
-    // Désactivation complète de l'utilisation du cache IndexedDB
-    function openDatabase(callback, errback) {
-      // Toujours appeler le callback d'erreur pour forcer le téléchargement
-      errback(new Error("Cache disabled"));
-    };
-
     function handleError(error) {
       console.error('package error:', error);
     };
@@ -141,6 +135,21 @@ Module.expectedDataFileDownloads++;
       new DataRequest(files[i].start, files[i].end, files[i].crunched, files[i].audio).open('GET', files[i].filename);
     }
 
+
+    var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+    var IDB_RO = "readonly";
+    var IDB_RW = "readwrite";
+    var DB_NAME = "EM_PRELOAD_CACHE";
+    var DB_VERSION = 1;
+    var METADATA_STORE_NAME = 'METADATA';
+    var PACKAGE_STORE_NAME = 'PACKAGES';
+    
+    // Modification de la fonction openDatabase pour toujours forcer un téléchargement
+    function openDatabase(callback, errback) {
+      // Force l'erreur pour contourner le cache IndexedDB
+      errback(new Error("Cache disabled"));
+    };
+
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -166,9 +175,14 @@ Module.expectedDataFileDownloads++;
 
       if (!Module.preloadResults) Module.preloadResults = {};
 
-      // Téléchargement direct du package sans vérification de cache
-      console.info('loading ' + PACKAGE_NAME + ' from remote (cache disabled)');
-      fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, processPackageData, handleError);
+      function preloadFallback(error) {
+        console.error(error);
+        console.error('falling back to default preload behavior');
+        fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, processPackageData, handleError);
+      };
+
+      // Appel direct à preloadFallback pour contourner le cache
+      preloadFallback(new Error("Forcing direct download"));
 
       if (Module['setStatus']) Module['setStatus']('Downloading...');
 
@@ -181,6 +195,6 @@ Module.expectedDataFileDownloads++;
     }
 
   }
-  loadPackage({"package_uuid":"0e2ac7bc-ed08-42ba-bfda-116806dabf8a","remote_package_size":2393519,"files":[{"filename":"/game.love","crunched":0,"start":0,"end":2393519,"audio":false}]});
+  loadPackage({"package_uuid":"10179bd0-6efa-4ef2-b966-d80585073114","remote_package_size":3044452,"files":[{"filename":"/game.love","crunched":0,"start":0,"end":3044452,"audio":false}]});
 
 })();
