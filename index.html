@@ -27,10 +27,13 @@
         <li><b>[P]</b> pour faire pause</li>
       </ul>
       <p style="padding-top: 20px;"> En cas de problème (page vide, bug), recharger la page</p>
-      <p style="text-align:center;"><button onclick="window.location.reload()">Recharger la page</button></p>
+      <p style="text-align:center;"><button onclick="reloadPage()">Recharger la page</button></p>
     </div>
 
     <script type='text/javascript'>
+      function reloadPage() {
+	window.location.href = window.location.href.split('?')[0] + '?nocache=' + new Date().getTime();
+      }
       function goFullScreen(){
             var canvas = document.getElementById("canvas");
             if(canvas.requestFullScreen)
