@@ -9,7 +9,7 @@
         const SELECTION_BORDER = '#ff0000';
         
         // Système d'historique
-        const MAX_HISTORY = 200;
+        const MAX_HISTORY = 5000;
         const undoStack = [];
         const redoStack = [];
         
@@ -58,11 +58,11 @@
         }
 
         // État de la grille
-        let gridWidth = 100;
-        let gridHeight = 80;
+        let gridWidth = 64;
+        let gridHeight = 32;
         let pixelStates = new Map();
-        let viewOffsetX = 0;
-        let viewOffsetY = 0;
+        let viewOffsetX = 50;
+        let viewOffsetY = 200; // Offset initial pour éviter la barre d'outils
 
         // État des outils
         let currentTool = 'draw';
@@ -113,7 +113,8 @@
                 gridHeight: gridHeight,
                 colorPalette: colorPalette,
                 primaryColor: primaryColor,
-                secondaryColor: secondaryColor
+                secondaryColor: secondaryColor,
+                viewOffsetY: viewOffsetY
             };
             localStorage.setItem('pixelArtSettings', JSON.stringify(settings));
         }
@@ -123,15 +124,18 @@
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 PIXEL_SIZE = settings.pixelSize || 20;
-                gridWidth = settings.gridWidth || 100;
-                gridHeight = settings.gridHeight || 80;
+                gridWidth = settings.gridWidth || 64;
+                gridHeight = settings.gridHeight || 32;
                 colorPalette = settings.colorPalette || colorPalette;
                 primaryColor = settings.primaryColor || '#000000';
                 secondaryColor = settings.secondaryColor || '#ffffff';
+                viewOffsetY = settings.viewOffsetY || 50;
                 
                 // Mettre à jour l'interface
                 document.getElementById('pixelSizeSlider').value = PIXEL_SIZE;
                 document.getElementById('pixelSizeValue').textContent = PIXEL_SIZE + 'px';
+                document.getElementById('gridWidthInput').value = gridWidth;
+                document.getElementById('gridHeightInput').value = gridHeight;
             }
         }
 
@@ -139,6 +143,32 @@
         function changePixelSize(size) {
             PIXEL_SIZE = parseInt(size);
             document.getElementById('pixelSizeValue').textContent = size + 'px';
+            drawGrid();
+            saveSettings();
+        }
+
+        function changeGridSize(width, height) {
+            // Sauvegarder l'état actuel
+            const oldWidth = gridWidth;
+            const oldHeight = gridHeight;
+            const oldPixels = new Map(pixelStates);
+            
+            gridWidth = parseInt(width) || 800;
+            gridHeight = parseInt(height) || 800;
+            
+            // Réinitialiser pixelStates avec les nouvelles dimensions
+            pixelStates = new Map();
+            
+            // Copier les pixels existants dans la nouvelle grille
+            for (const [key, color] of oldPixels) {
+                const oldY = Math.floor(key / oldWidth);
+                const oldX = key % oldWidth;
+                if (oldX < gridWidth && oldY < gridHeight) {
+                    const newKey = oldY * gridWidth + oldX;
+                    pixelStates.set(newKey, color);
+                }
+            }
+            
             drawGrid();
             saveSettings();
         }
@@ -152,6 +182,10 @@
             canvas.addEventListener('contextmenu', e => e.preventDefault());
             
             loadSettings();
+            // Mettre à jour les inputs de taille de grille avec les valeurs actuelles
+            document.getElementById('gridWidthInput').value = gridWidth;
+            document.getElementById('gridHeightInput').value = gridHeight;
+            
             initPalette();
             initColorWheel();
             updateColorIndicators();
@@ -769,6 +803,33 @@
 
         // Variables pour suivre les changements pendant le dessin
         let drawingChanged = false;
+        let lastDrawPosition = null;
+
+        // Fonction pour tracer une ligne entre deux points
+        function drawLine(x0, y0, x1, y1, color) {
+            const dx = Math.abs(x1 - x0);
+            const dy = Math.abs(y1 - y0);
+            const sx = (x0 < x1) ? 1 : -1;
+            const sy = (y0 < y1) ? 1 : -1;
+            let err = dx - dy;
+
+            while (true) {
+                if (setPixelColor(x0, y0, color, true)) {
+                    drawingChanged = true;
+                }
+
+                if (x0 === x1 && y0 === y1) break;
+                const e2 = 2 * err;
+                if (e2 > -dy) {
+                    err -= dy;
+                    x0 += sx;
+                }
+                if (e2 < dx) {
+                    err += dx;
+                    y0 += sy;
+                }
+            }
+        }
         
         // Gestion des événements souris
         canvas.addEventListener('mousedown', (e) => {
@@ -779,16 +840,21 @@
             const gridPos = screenToGrid(e.clientX, e.clientY);
             if (!gridPos.valid) return;
 
-            if (currentTool === 'draw') {
+            if (currentTool === 'draw' || currentTool === 'eraser') {
                 isDrawing = true;
                 
-                // Déterminer la couleur selon le bouton de souris et la stocker
-                currentDrawColor = e.button === 2 ? secondaryColor : primaryColor;
+                // Déterminer la couleur selon l'outil et le bouton de souris
+                if (currentTool === 'eraser') {
+                    currentDrawColor = '#ffffff'; // Toujours blanc pour la gomme
+                } else {
+                    currentDrawColor = e.button === 2 ? secondaryColor : primaryColor;
+                }
                 
                 // Premier pixel sans sauvegarder l'historique
                 if (setPixelColor(gridPos.col, gridPos.row, currentDrawColor, true)) {
                     drawingChanged = true;
                 }
+                lastDrawPosition = gridPos;
                 drawGrid();
                 
             } else if (currentTool === 'bucket') {
@@ -822,11 +888,12 @@
         canvas.addEventListener('mousemove', (e) => {
             const gridPos = screenToGrid(e.clientX, e.clientY);
             
-            if (currentTool === 'draw' && isMouseDown && isDrawing && gridPos.valid) {
-                // Utiliser la couleur stockée au moment du clic initial et ne pas sauvegarder l'historique
-                if (setPixelColor(gridPos.col, gridPos.row, currentDrawColor, true)) {
-                    drawingChanged = true;
+            if ((currentTool === 'draw' || currentTool === 'eraser') && isMouseDown && isDrawing && gridPos.valid) {
+                // Tracer une ligne depuis la dernière position jusqu'à la position actuelle
+                if (lastDrawPosition && (lastDrawPosition.col !== gridPos.col || lastDrawPosition.row !== gridPos.row)) {
+                    drawLine(lastDrawPosition.col, lastDrawPosition.row, gridPos.col, gridPos.row, currentDrawColor);
                 }
+                lastDrawPosition = gridPos;
                 drawGrid();
                 
             } else if (currentTool === 'eyedropper' && isMouseDown && gridPos.valid) {
@@ -869,6 +936,7 @@
             isDrawing = false;
             currentDrawColor = null;
             drawingChanged = false;
+            lastDrawPosition = null;
         });
 
         // Événement pour le clic droit
@@ -963,10 +1031,19 @@
             const startRow = Math.min(selectionStart.row, selectionEnd.row);
             const endRow = Math.max(selectionStart.row, selectionEnd.row);
 
+            let hasChanges = false;
+            saveToHistory();
+
             for (let row = startRow; row <= endRow; row++) {
                 for (let col = startCol; col <= endCol; col++) {
-                    setPixelColor(col, row, color);
+                    if (setPixelColor(col, row, color, true)) {
+                        hasChanges = true;
+                    }
                 }
+            }
+
+            if (!hasChanges) {
+                undoStack.pop();
             }
             
             drawGrid();
@@ -990,11 +1067,13 @@
             viewOffsetY = panStartOffset.y + deltaY;
             
             // Limiter le déplacement pour éviter de sortir complètement de la grille
-            const maxOffsetX = PIXEL_SIZE * 10;
-            const maxOffsetY = PIXEL_SIZE * 10;
-            const minOffsetX = -(gridWidth * PIXEL_SIZE) + canvas.width - maxOffsetX;
-            const minOffsetY = -(gridHeight * PIXEL_SIZE) + canvas.height - maxOffsetY;
+            const margin = PIXEL_SIZE * 5; // Marge pour garder une partie de la grille visible
+            const maxOffsetX = window.innerWidth - margin;
+            const maxOffsetY = window.innerHeight - margin;
+            const minOffsetX = -(gridWidth * PIXEL_SIZE) + margin;
+            const minOffsetY = -(gridHeight * PIXEL_SIZE) + margin;
             
+            // S'assurer que la grille reste toujours accessible
             viewOffsetX = Math.max(minOffsetX, Math.min(maxOffsetX, viewOffsetX));
             viewOffsetY = Math.max(minOffsetY, Math.min(maxOffsetY, viewOffsetY));
             
@@ -1033,6 +1112,10 @@
                 modeIndicator.textContent = 'Mode: Crayon';
                 modeInfo.textContent = 'Mode crayon : Clic gauche/droit pour dessiner';
                 canvas.style.cursor = 'crosshair';
+            } else if (tool === 'eraser') {
+                modeIndicator.textContent = 'Mode: Gomme';
+                modeInfo.textContent = 'Mode gomme : Cliquer pour effacer';
+                canvas.style.cursor = 'crosshair';
             } else if (tool === 'bucket') {
                 modeIndicator.textContent = 'Mode: Pot de peinture';
                 modeInfo.textContent = 'Mode pot de peinture : Clic pour remplir une zone';
@@ -1056,7 +1139,7 @@
         function clearGrid() {
             // Ne sauvegarder dans l'historique que s'il y a des pixels non blancs
             let hasNonWhitePixels = false;
-            for (const [_, color] of pixelStates) {
+            for (const [pixelId, color] of pixelStates) {
                 if (color !== '#ffffff') {
                     hasNonWhitePixels = true;
                     break;
@@ -1065,15 +1148,35 @@
 
             if (hasNonWhitePixels) {
                 saveToHistory();
-                pixelStates.clear();
+                pixelStates = new Map(); // Créer une nouvelle Map vide plutôt que clear()
                 clearSelection();
                 drawGrid();
             }
         }
 
         function expandGrid() {
+            // Sauvegarder l'état actuel
+            const oldWidth = gridWidth;
+            const oldHeight = gridHeight;
+            const oldPixels = new Map(pixelStates);
+            
+            // Augmenter la taille
             gridWidth += 20;
             gridHeight += 20;
+            
+            // Recalculer les positions des pixels existants
+            pixelStates.clear();
+            for (let row = 0; row < oldHeight; row++) {
+                for (let col = 0; col < oldWidth; col++) {
+                    const oldId = row * oldWidth + col;
+                    const color = oldPixels.get(oldId);
+                    if (color) {
+                        const newId = row * gridWidth + col;
+                        pixelStates.set(newId, color);
+                    }
+                }
+            }
+            
             saveSettings();
             drawGrid();
         }
@@ -1159,4 +1262,6 @@
 
         // Initialisation
         initCanvas();
+        // Sauvegarder l'état initial vide
+        saveToHistory();
         setTool('draw');

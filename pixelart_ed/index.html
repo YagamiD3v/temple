@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+
+
     <title>Grille de Pixels Canvas avec Palette</title>
     <link rel="stylesheet" href="style.css">
  
@@ -11,6 +15,7 @@
     <div class="controls">
         <div class="tool-group">
             <button id="drawTool" class="active" onclick="setTool('draw')">✏️ Crayon</button>
+            <button id="eraserTool" onclick="setTool('eraser')">🧹 Gomme</button>
             <button id="bucketTool" onclick="setTool('bucket')">🪣 Pot de peinture</button>
             <button id="eyedropperTool" onclick="setTool('eyedropper')">💧 Pipette</button>
             <button id="selectTool" onclick="setTool('select')">🔲 Sélection</button>
@@ -23,12 +28,19 @@
                 <div class="color-button secondary" id="secondaryColor" onclick="selectSecondaryColor()"></div>
             </div>
         </div>
-        <div class="tool-group">
+        <div class="control-group">
             <div class="pixel-size-control">
                 <label>Taille:</label>
                 <input type="range" id="pixelSizeSlider" min="5" max="50" value="20" oninput="changePixelSize(this.value)">
                 <span id="pixelSizeValue">20px</span>
             </div>
+        </div>
+        <div class="control-group">
+            <label>Dimensions:</label>
+            <input type="number" id="gridWidthInput" value="32" min="1" style="width: 70px">
+            <span>×</span>
+            <input type="number" id="gridHeightInput" value="800" min="1" style="width: 70px">
+            <button onclick="changeGridSize(document.getElementById('gridWidthInput').value, document.getElementById('gridHeightInput').value)">Appliquer</button>
         </div>
         <div class="tool-group">
             <button onclick="clearGrid()">🗑️ Effacer tout</button>
