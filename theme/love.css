@@ -1,3 +1,12 @@
 body {
-    background-color: rgb( 154, 205, 237 )
+    background-color: rgb( 154, 205, 237 );
+    margin: 0;
+    min-height: 100vh;
+    background-image: url("../theme/bg.png");
+    background-repeat: no-repeat;
+    background-position: top center;
+    background-size: cover;
+}
+h1 {
+    color: rgb(221, 206, 107)
 }
