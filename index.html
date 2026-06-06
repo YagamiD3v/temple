@@ -19,14 +19,21 @@
     </center>
     <div style="display: block; width: 470px; margin: 10px auto; padding: 5px; background: rgba(250, 235, 215, 0.75) ">
       <div style
-      <p><u>Objectif</u> : Déplacer les blocs pour faire des lignes</p>
+      <p><u>Objectif</u> : Déplacer les blocs pour les faire tomber et faire des lignes</p>
       <ul>
         <li>Utiliser les <b>[flèches du clavier]</b> pour déplacer le curseur</li>
         <li>Sélectionner et relacher un bloc avec <b>[espace]</b></li>
-	<li>[Y] Annuler le déplacement d'un bloc</li>
-        <li><b>[A]</b> permet de détuire 1, 2 ou 3 lignes en fonction de son niveau de charge. Il se recharge avec des combos (enchainement de destruction de lignes)</li>
-        <li><b>[X]</b> permet d'avoir un bonus de temps pour déplacer un les blocs (1 seule fois pour le moment)</li>
+	      <li><b>[Y]</b> Annuler le déplacement d'un bloc</li>
+        <li><b>[A]</b> permet de détuire 1, 2 ou 3 lignes en fonction de son niveau de charge. Il se recharge avec des combos (enchainement de destruction de lignes) ou des multilignes</li>
+        <li><b>[X]</b> permet d'avoir un bonus de temps, pour le recharger il faut détruire le lignes avec des bloc rouge:
+          <ul>
+            <li>chargé à 50 % => +10s</li>
+            <li>chargé à 75 % => +15s</li>
+            <li>chargé à 100 % => +20s</li>
+          </ul>
+        </li>
         <li><b>[P]</b> pour faire pause</li>
+        <li>Le menu "<b>options</b>" vous permet de controler le volume des sons et musiques</li>
       </ul>
       <p style="padding-top: 20px;"> En cas de problème (page vide, bug), recharger la page</p>
       <p style="padding-top: 20px;color:red; font-weight:bold;text-align: center;"> Vous êtes déja venu ? Videz le cache (shift + bouton actualisé) et cliquez sur le bouton ci-dessous</p>
@@ -80,7 +87,7 @@
 
       var Module = {
         arguments: ["./game.love"],
-        INITIAL_MEMORY: 16777216,
+        INITIAL_MEMORY: 134217728,
         printErr: console.error.bind(console),
         canvas: (function() {
           var canvas = document.getElementById('canvas');
