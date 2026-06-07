@@ -12,14 +12,16 @@
   <body>
     <center>
       <div>
-        <h1>Temple (beta version)</h1>
+        <h1>Temple Démo</h1>
         <canvas id="loadingCanvas" oncontextmenu="event.preventDefault()" width="800" height="600"></canvas>
         <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
       </div>
     </center>
+    <p style="text-align:center;"><button onclick="reloadPage()">Recharger la page</button></p>
     <div style="display: block; width: 470px; margin: 10px auto; padding: 5px; background: rgba(250, 235, 215, 0.75) ">
       <div style
       <p><u>Objectif</u> : Déplacer les blocs pour les faire tomber et faire des lignes</p>
+      <p>Plus les niveaux passe et moins vous avez de temps pour déplacer les blocs</p>
       <ul>
         <li>Utiliser les <b>[flèches du clavier]</b> pour déplacer le curseur</li>
         <li>Sélectionner et relacher un bloc avec <b>[espace]</b></li>
@@ -32,6 +34,7 @@
             <li>chargé à 100 % => +20s</li>
           </ul>
         </li>
+        <li>Detruisez les lignes avec un <b>bonus pause (bloc bleu foncé)</b>  pour respirer un peu et avoir plus de temps pour déplacer les blocs pendant 2 minutes</li>
         <li><b>[P]</b> pour faire pause</li>
         <li>Le menu "<b>options</b>" vous permet de controler le volume des sons et musiques</li>
       </ul>
