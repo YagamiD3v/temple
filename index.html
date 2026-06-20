@@ -20,28 +20,54 @@
     <p style="text-align:center;"><button onclick="reloadPage()">Recharger la page</button></p>
     <div style="display: block; width: 470px; margin: 10px auto; padding: 5px; background: rgba(250, 235, 215, 0.75) ">
       <div style
-      <p><u>Objectif</u> : Déplacer les blocs pour les faire tomber et faire des lignes</p>
-      <p>Plus les niveaux passe et moins vous avez de temps pour déplacer les blocs</p>
-      <ul>
-        <li>Utiliser les <b>[flèches du clavier]</b> pour déplacer le curseur</li>
-        <li>Sélectionner et relacher un bloc avec <b>[espace]</b></li>
-	      <li><b>[Y]</b> Annuler le déplacement d'un bloc</li>
-        <li><b>[A]</b> permet de détuire 1, 2 ou 3 lignes en fonction de son niveau de charge. Il se recharge avec des combos (enchainement de destruction de lignes) ou des multilignes</li>
-        <li><b>[X]</b> permet d'avoir un bonus de temps, pour le recharger il faut détruire le lignes avec des bloc rouge:
-          <ul>
-            <li>chargé à 50 % => +10s</li>
-            <li>chargé à 75 % => +15s</li>
-            <li>chargé à 100 % => +20s</li>
-          </ul>
-        </li>
-        <li>Detruisez les lignes avec un <b>bonus pause (bloc bleu foncé)</b>  pour respirer un peu et avoir plus de temps pour déplacer les blocs pendant 2 minutes</li>
-        <li><b>[P]</b> pour faire pause</li>
-        <li>Le menu "<b>options</b>" vous permet de controler le volume des sons et musiques</li>
-      </ul>
-      <p style="padding-top: 20px;"> En cas de problème (page vide, bug), recharger la page</p>
-      <p style="padding-top: 20px;color:red; font-weight:bold;text-align: center;"> Vous êtes déja venu ? Videz le cache (shift + bouton actualisé) et cliquez sur le bouton ci-dessous</p>
-      <p style="padding-top: 20px; color:red; font-weight:bold;text-align: center;"> N'appuyer pas sur echap (cela fait planter le jeu)</p>
-      <p style="text-align:center;"><button onclick="reloadPage()">Recharger la page</button></p>
+      <p><u>But du jeu</u> : déplacer les blocs pour les faire tomber, compléter des lignes et faire le meilleur score possible.</p>
+
+<p>Le jeu devient de plus en plus rapide : plus le niveau monte, moins vous avez de temps pour déplacer un bloc avant qu’une nouvelle ligne n’arrive.</p>
+
+<ul>
+  <li>Déplacez le curseur avec <b>[flèches du clavier]</b>.</li>
+  <li>Sélectionnez un bloc avec <b>[espace]</b>, déplacez-le horizontalement, puis appuyez à nouveau sur <b>[espace]</b> pour le relâcher.</li>
+  <li>Si vous changez d’avis, utilisez <b>[Y]</b> pour annuler le déplacement et remettre le bloc à sa position d’origine.</li>
+  <li>Quand un bloc est posé, la simulation reprend : les blocs tombent, les lignes pleines disparaissent, les combos s’enchaînent et une nouvelle ligne peut arriver.</li>
+</ul>
+
+<p><u>Bonus</u></p>
+
+<ul>
+  <li><b>[A]</b> active le <b>bonus ligne</b> : il détruit <b>1, 2 ou 3 lignes</b> selon son niveau de charge.</li>
+  <li>Le bonus <b>[A]</b> se recharge grâce aux <b>combos</b> et aux <b>multilignes</b>.</li>
+  <li><b>[X]</b> active le <b>bonus temps</b>.</li>
+  <li>Pour recharger le bonus <b>[X]</b>, il faut détruire des lignes contenant des <b>blocs rouges</b>.</li>
+  <li>Charge du bonus temps :
+    <ul>
+      <li><b>50%</b> : <b>+10 secondes</b></li>
+      <li><b>75%</b> : <b>+15 secondes</b></li>
+      <li><b>100%</b> : <b>+20 secondes</b></li>
+    </ul>
+  </li>
+  <li>Des <b>blocs bonus répit</b> peuvent aussi apparaître sur certaines nouvelles lignes quand la partie devient tendue.</li>
+  <li>Si vous détruisez une ligne contenant ce bonus, vous obtenez un <b>bonus de répit de 2 minutes</b>, qui vous laisse davantage de temps pour déplacer les blocs.</li>
+</ul>
+
+<p><u>Mécaniques importantes</u></p>
+
+<ul>
+  <li>Faire tomber les blocs proprement est essentiel : une mauvaise pose peut vite encombrer la grille.</li>
+  <li>Détruire plusieurs lignes d’un coup rapporte davantage et recharge plus vite les bonus.</li>
+  <li>Enchaîner plusieurs destructions sans casser le rythme permet de faire des <b>combos</b>.</li>
+  <li>Le temps restant pour déplacer un bloc est une ressource clé : surveillez-le en permanence.</li>
+</ul>
+
+<p><u>Commandes utiles</u></p>
+
+<ul>
+  <li><b>[P]</b> : mettre le jeu en pause</li>
+  <li>Le menu <b>Options</b> permet de régler le volume de la musique et des bruitages</li>
+</ul>
+
+<p style="padding-top: 20px;">En cas de problème (page vide, bug), rechargez la page.</p>
+<p style="padding-top: 20px; color:red; font-weight:bold; text-align:center;">Vous êtes déjà venu ? Videz le cache (Shift + actualiser) puis cliquez sur le bouton ci-dessous.</p>
+<p style="text-align:center;"><button onclick="reloadPage()">Recharger la page</button></p>
     </div>
 
     <script type='text/javascript'>
