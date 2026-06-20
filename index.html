@@ -4,10 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, minimum-scale=1, maximum-scale=1">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>temple</title>
 
     <!-- Load custom style sheet -->
-    <link rel="stylesheet" type="text/css" href="theme/love.css">
+    <link rel="stylesheet" type="text/css" href="theme/love.css?t=" id="cssLink">
   </head>
   <body>
     <center>
@@ -71,8 +74,42 @@
     </div>
 
     <script type='text/javascript'>
+      // Initialize CSS timestamp on page load
+      document.getElementById('cssLink').href = 'theme/love.css?t=' + new Date().getTime();
+      
       function reloadPage() {
-	window.location.href = window.location.href.split('?')[0] + '?nocache=' + new Date().getTime();
+        // Clear all caches
+        if ('caches' in window) {
+          caches.keys().then(function(cacheNames) {
+            cacheNames.forEach(function(cacheName) {
+              caches.delete(cacheName);
+            });
+          });
+        }
+        
+        // Clear ServiceWorker
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            registrations.forEach(function(registration) {
+              registration.unregister();
+            });
+          });
+        }
+        
+        // Clear IndexedDB (used by game.js for caching)
+        if ('indexedDB' in window) {
+          try {
+            var deleteRequest = indexedDB.deleteDatabase('EM_PRELOAD_CACHE');
+            deleteRequest.onsuccess = function() {
+              console.log('IndexedDB cache cleared');
+            };
+          } catch(e) {
+            console.log('Could not clear IndexedDB:', e);
+          }
+        }
+        
+        // Force hard reload with cache-busting parameter
+        window.location.href = window.location.href.split('?')[0] + '?nocache=' + new Date().getTime();
       }
       function goFullScreen(){
             var canvas = document.getElementById("canvas");
@@ -118,6 +155,13 @@
         arguments: ["./game.love"],
         INITIAL_MEMORY: 134217728,
         printErr: console.error.bind(console),
+        locateFile: function(filename) {
+          // Force cache-busting for game.data
+          if (filename === 'game.data') {
+            return filename + '?t=' + new Date().getTime();
+          }
+          return filename;
+        },
         canvas: (function() {
           var canvas = document.getElementById('canvas');
 
@@ -157,13 +201,21 @@
         Love(Module);
       }
 
-      // Charger game.js sans cache
+      // Load game.js and game.data without cache
+      const timestamp = new Date().getTime();
       const scriptGame = document.createElement('script');
       scriptGame.type = 'text/javascript';
-      scriptGame.src = 'game.js?t=' + new Date().getTime(); // Ajoute un timestamp unique
+      scriptGame.src = 'game.js?t=' + timestamp;
+      scriptGame.addEventListener('error', function() {
+        console.error('Failed to load game.js');
+      });
       document.body.appendChild(scriptGame);
     </script>
     <!--<script type="text/javascript" src="game.js"></script>-->
-    <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
+    <script async type="text/javascript" src="love.js?t=" id="loveScript" onload="applicationLoad(this)"></script>
+    <script type='text/javascript'>
+      // Set love.js timestamp before it loads
+      document.getElementById('loveScript').src = 'love.js?t=' + new Date().getTime();
+    </script>
   </body>
 </html>
